@@ -1,0 +1,53 @@
+import imutils
+import cv2
+
+#redLower = (27, 47 ,150) green color declaration
+#redUpper = (179, 255 ,255)
+
+redLower =(15, 164 ,162) # colors
+redUpper =(45 , 232,255)
+
+camera =cv2.VideoCapture(0)# camera initialization
+
+while True:
+    
+    (grabbed , frame) = camera.read()
+    frame = imutils.resize(frame, width = 600)#frame intialization
+    blurred =cv2.GaussianBlur(frame ,(11, 11), 0)# smoothning
+    hsv =cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+
+    mask =cv2.inRange(hsv, redLower, redUpper)#masking the green color
+    mask =cv2.erode(mask, None, iterations =2)
+    mask =cv2.dilate(mask, None, iterations =2)
+
+    cnts =cv2.findContours(mask.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)[-2]# contours finding
+
+    center=None
+    if len(cnts) > 0:# for circle enclosing the object
+        c = max(cnts, key=cv2.contourArea) # area
+        ((x,y),radius)=cv2.minEnclosingCircle(c)
+        M = cv2.moments(c)
+        center = (int(M["m10"] / ["m00"]),int(M["m01"] / ["m00"]))
+
+        if radius > 10:
+            cv2.circle(frame, int(x) ,int(y), int(radius),(0, 255, 255),2)
+            cv2.circle(frame, center,5,(0,0,255),-1)
+
+            #print(center,radius)
+            if radius > 250: # object movements
+                print("stop")
+            else:
+                if (center[0]<150):
+                    print("Left")
+                elif(center[0]>450):
+                     print("Right")
+                elif(radius<250):
+                    print("Front")
+                else:
+                    print("Stop")
+    cv2.imshow("Frame",frame)
+    key =cv2.waitKey(1) & 0xFF
+    if key == ord("q"):
+        break
+camera.release()
+cv2.destroyAllWindows()
